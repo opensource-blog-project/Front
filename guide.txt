@@ -8,4 +8,4 @@
 5. npm run serve 실행 후 브라우저 localhost:8080 로 블로그 페이지 확인
 (이 밑은은 Docker로 실행하는 법, 근데 5분 정도 걸릴 수 있음)
 6. docker 엔진 켜고 docker-compose build 실행 
-7. docker-compose up -d 실행 후 브라
+7. docker-compose up -d 실행 후 브라우저 localhost:8080 로 블로그 페이지 확인
