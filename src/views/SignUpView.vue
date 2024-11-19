@@ -28,6 +28,14 @@
         placeholder="비밀번호를 다시 입력"
       />
 
+      <label for="nickname">닉네임:</label>
+      <input
+        type="text"
+        id="nickname"
+        v-model="nickname"
+        placeholder="사용할 닉네임을 입력"
+      />
+
       <button @click="signup">완료</button>
     </div>
   </div>
@@ -40,16 +48,16 @@ export default {
       username: '',
       password: '',
       confirmPassword: '',
+      nickname: '', // 닉네임 추가
     };
   },
   methods: {
     signup() {
-      // 회원가입 로직을 여기에 구현해
       if (this.password !== this.confirmPassword) {
         alert('비밀번호가 일치하지 않습니다.');
         return;
       }
-      if (this.username && this.password) {
+      if (this.username && this.password && this.nickname) {
         // 회원가입 성공 후 로그인 페이지로 이동
         alert('회원가입이 완료되었습니다!');
         this.$router.push('/login');
@@ -62,6 +70,7 @@ export default {
 </script>
 
 <style scoped>
+/* 기존 스타일 동일 */
 .signup-container {
   display: flex;
   flex-direction: column;

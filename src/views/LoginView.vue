@@ -35,7 +35,7 @@ export default {
   },
   methods: {
     login() {
-      // 로그인 로직을 여기에 구현해
+      // 로그인 로직을 여기에 구현
       if (this.username && this.password) {
         // 인증 성공 후 메인 화면으로 이동
         this.$router.push('/main');
