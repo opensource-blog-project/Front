@@ -1,47 +1,34 @@
 <template>
   <div id="app">
     <header>
-      <h1>팀 블로그에 오신 것을 환영합니다~!</h1>
+      
     </header>
-    <main>
-      <router-view />
-    </main>
+    <router-view />
+    <!-- 여기에 각 페이지가 렌더링됨 -->
   </div>
 </template>
 
 <script>
-// import MyHome from './components/MyHome.vue'
-
 export default {
   name: 'App',
-  // components: {
-  //   MyHome
-  // }
 };
 </script>
 
 <style>
 #app {
-  font-family: Avenir, Helvetica, Arial, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  font-family: 'Noto Sans KR', sans-serif;
   text-align: center;
-  color: #2c3e50;
-  margin-top: 60px;
+  color: #333;
 }
 
-nav {
-  display: flex;
-  justify-content: center;
-  gap: 10px;
+header {
+  background-color: #f8f8f8;
+  padding: 20px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-nav a {
-  text-decoration: none;
-  color: #42b983;
-}
-
-nav a.router-link-exact-active {
-  font-weight: bold;
+h1 {
+  margin: 0;
+  font-size: 2.5rem;
 }
 </style>
