@@ -19,7 +19,7 @@
 
       <div class="signup-link">
         <p>아직 회원이 아니시라면?</p>
-        <router-link to="/signup">회원가입</router-link>
+        <router-link to="/api/v1/user">회원가입</router-link>
       </div>
     </div>
   </div>
@@ -38,7 +38,7 @@ export default {
       // 로그인 로직을 여기에 구현
       if (this.username && this.password) {
         // 인증 성공 후 메인 화면으로 이동
-        this.$router.push('/main');
+        this.$router.push('/posts');
       } else {
         alert('아이디와 비밀번호를 입력해주세요.');
       }

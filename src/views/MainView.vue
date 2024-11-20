@@ -29,6 +29,8 @@
 </template>
 
 <script>
+//import axios from 'axios'
+
 export default {
   data() {
     return {
@@ -85,7 +87,7 @@ export default {
       console.log('검색 기능 실행됨');
     },
     goToNewPost() {
-      this.$router.push('/newpost'); // 글 작성 화면으로 이동
+      this.$router.push('/posts/create'); // 글 작성 화면으로 이동
     },
   },
 };

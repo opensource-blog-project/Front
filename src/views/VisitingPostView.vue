@@ -1,7 +1,7 @@
 <template>
   <div class="visiting-post-view">
     <div class="left-banner">
-      <router-link to="/main" class="back-link"
+      <router-link to="/posts" class="back-link"
         >🏠 홈 화면으로 돌아가기</router-link
       >
       <div class="comments-section">
@@ -36,7 +36,7 @@
 
     <div class="post-content">
       <div v-if="isPostAuthor" class="post-actions">
-        <button @click="editPost">수정</button>
+        <button v-if="isPostAuthor" @click="navigateToEdit">수정</button>
         <button @click="deletePost">삭제</button>
       </div>
       <p class="author">@{{ post.author }}</p>
@@ -122,8 +122,11 @@ export default {
     deleteComment(id) {
       this.comments = this.comments.filter((c) => c.id !== id);
     },
-    editPost() {
-      console.log('Edit post');
+    navigateToEdit() {
+      this.$router.push({
+        name: 'EditPost',
+        params: { id: this.post.id }, // 현재 게시글의 ID를 전달
+      });
     },
     deletePost() {
       if (confirm('정말로 이 글을 삭제하시겠습니까?')) {
