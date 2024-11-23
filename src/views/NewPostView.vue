@@ -30,10 +30,12 @@
 </template>
 
 <script>
+import axios from 'axios';
+
 export default {
   props: {
-    post: {
-      type: Object,
+    id: {
+      type: String,
       default: null, // null일 경우 새 글 작성 모드로 간주
     },
   },
@@ -47,13 +49,15 @@ export default {
   },
   computed: {
     isEditMode() {
-      return !!this.postId; // postId가 있으면 수정 모드
+      return !!this.id; // id가 있으면 수정 모드
     },
   },
-  created() {
+  async created() {
     if (this.isEditMode) {
-      // API 호출 또는 데이터를 로드
-      this.loadPostData();
+      console.log('수정 모드입니다. id:', this.id);
+      await this.loadPostData();
+    } else {
+      console.log('새 글 작성 모드입니다.');
     }
   },
   methods: {
@@ -68,41 +72,50 @@ export default {
       }
       this.localPhotos = files;
     },
-    loadPostData() {
-      // 예제: 임시 데이터를 로드
-      const post = {
-        id: this.postId,
-        title: '기존 게시글 제목',
-        images: [],
-        storeName: '기존 상호명',
-        body: '기존 본문 내용',
-      };
+    async loadPostData() {
+      try {
+        const response = await axios.get(`http://localhost:3000/posts/${this.id}`);
+        console.log(response.data); // 응답 데이터 콘솔에 출력
+        const post = response.data;
 
-      // 로드된 데이터로 폼 필드 채우기
-      this.localTitle = post.title;
-      this.localPhotos = post.images;
-      this.localBusinessName = post.storeName;
-      this.localContent = post.body;
-    },
-    submitPost() {
-      const payload = {
-        title: this.localTitle,
-        images: this.localPhotos,
-        storeName: this.localBusinessName,
-        body: this.localContent,
-      };
-
-      if (this.isEditMode) {
-        // 수정 API 호출
-        console.log('수정 데이터:', { id: this.postId, ...payload });
-        alert('글 수정이 완료되었습니다!');
-      } else {
-        // 새 글 작성 API 호출
-        console.log('작성 데이터:', payload);
-        alert('글 작성이 완료되었습니다!');
+        this.localTitle = post.title;
+        this.localPhotos = post.images || [];
+        this.localBusinessName = post.restaurant;
+        this.localContent = post.content;
+      } catch (error) {
+        console.error('게시글 데이터를 불러오는 중 오류가 발생했습니다:', error);
+        alert('게시글 데이터를 불러오는 중 오류가 발생했습니다. 다시 시도해주세요.');
       }
+    },
+    async submitPost() {
+      const formData = new FormData();
+      formData.append('title', this.localTitle);
+      formData.append('content', this.localContent);
+      formData.append('restaurant', this.localBusinessName);
+      this.localPhotos.forEach((photo, index) => {
+        formData.append(`images[${index}]`, photo);
+      });
 
-      this.$router.push('/main');
+      const url = this.isEditMode
+        ? `http://localhost:3000/posts/${this.id}`
+        : 'http://localhost:3000/posts';
+
+      const method = this.isEditMode ? 'put' : 'post';
+
+      try {
+        const response = await axios({
+          method,
+          url,
+          data: formData,
+        });
+
+        console.log('Response data:', response.data);
+        alert(this.isEditMode ? '글 수정이 완료되었습니다!' : '글 작성이 완료되었습니다!');
+        this.$router.push('/main');
+      } catch (error) {
+        console.error('Error:', error);
+        alert('오류가 발생했습니다. 다시 시도해주세요.');
+      }
     },
   },
 };

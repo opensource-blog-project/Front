@@ -37,10 +37,10 @@
       <p class="author">@{{ post.author }}</p>
       <h1 class="title">{{ post.title }}</h1>
       <div class="images">
-        <img v-for="(image, index) in post.images" :key="index" :src="image" :alt="post.title" class="post-image" />
+        <img v-for="(image, index) in post.images" :key="index" :src="image" class="post-image" />
       </div>
       <h3 class="store-name">{{ post.storeName }}</h3>
-      <p class="body">{{ post.body }}</p>
+      <p class="body">{{ post.content }}</p>
     </div>
   </div>
 </template>
@@ -118,9 +118,10 @@ export default {
     deletePost() {
       if (confirm('정말로 이 글을 삭제하시겠습니까?')) {
         axios.delete(`http://localhost:3000/posts/${this.post.id}`)
+        axios.delete(`http://localhost:3000/main/${this.post.id}`)
           .then(() => {
             console.log('Post deleted');
-            this.$router.push({ name: 'Home' }); // 삭제 후 홈으로 이동
+            this.$router.push({ name: 'Main' }); // 삭제 후 홈으로 이동
           })
           .catch(error => {
             console.error('Error deleting post:', error);
