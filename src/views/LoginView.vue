@@ -8,12 +8,7 @@
       <input type="text" id="username" v-model="username" placeholder="Value" />
 
       <label for="password">Password</label>
-      <input
-        type="password"
-        id="password"
-        v-model="password"
-        placeholder="Value"
-      />
+      <input type="password" id="password" v-model="password" placeholder="Value" />
 
       <button @click="login">로그인</button>
 
@@ -38,7 +33,7 @@ export default {
       // 로그인 로직을 여기에 구현
       if (this.username && this.password) {
         // 인증 성공 후 메인 화면으로 이동
-        this.$router.push('/posts');
+        this.$router.push('/main');
       } else {
         alert('아이디와 비밀번호를 입력해주세요.');
       }

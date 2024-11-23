@@ -4,43 +4,23 @@
 
     <div class="form-group">
       <label for="title">제목</label>
-      <input
-        type="text"
-        id="title"
-        v-model="localTitle"
-        placeholder="제목을 입력하세요"
-      />
+      <input type="text" id="title" v-model="localTitle" placeholder="제목을 입력하세요" />
     </div>
 
     <div class="photo-upload">
       <label for="photos">사진 선택 (최대 2개):</label>
-      <input
-        type="file"
-        id="photos"
-        @change="handlePhotoUpload"
-        multiple
-        accept="image/*"
-      />
+      <input type="file" id="photos" @change="handlePhotoUpload" multiple accept="image/*" />
       <p>{{ photoCountMessage }}</p>
     </div>
 
     <div class="form-group">
       <label for="businessName">상호명 입력</label>
-      <input
-        type="text"
-        id="businessName"
-        v-model="localBusinessName"
-        placeholder="상호명을 입력하세요"
-      />
+      <input type="text" id="businessName" v-model="localBusinessName" placeholder="상호명을 입력하세요" />
     </div>
 
     <div class="form-group">
       <label for="content">본문 작성</label>
-      <textarea
-        id="content"
-        v-model="localContent"
-        placeholder="본문을 입력하세요"
-      ></textarea>
+      <textarea id="content" v-model="localContent" placeholder="본문을 입력하세요"></textarea>
     </div>
 
     <button @click="submitPost" class="submit-button">
@@ -78,7 +58,7 @@ export default {
   },
   methods: {
     goBack() {
-      this.$router.push('/posts');
+      this.$router.push('/main');
     },
     handlePhotoUpload(event) {
       const files = Array.from(event.target.files);
@@ -122,7 +102,7 @@ export default {
         alert('글 작성이 완료되었습니다!');
       }
 
-      this.$router.push('/posts');
+      this.$router.push('/main');
     },
   },
 };

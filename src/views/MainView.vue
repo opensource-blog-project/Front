@@ -2,25 +2,18 @@
   <div class="main-container">
     <h1 class="title">맛집블로그</h1>
     <div class="search-bar-container">
-      <input
-        type="text"
-        v-model="searchQuery"
-        placeholder="검색어를 입력하세요"
-      />
+      <input type="text" v-model="searchQuery" placeholder="검색어를 입력하세요" />
       <button @click="goToNewPost">New Post</button>
     </div>
 
     <div class="post-board">
-      <div class="post-card" v-for="post in filteredPosts" :key="post.id">
+      <div class="post-card" v-for="post in filteredPosts" :key="post.postId">
         <div class="profile">
           <span class="nickname">{{ post.author }}</span>
         </div>
-        <router-link
-          :to="{ name: 'Visiting', params: { id: post.id } }"
-          class="post-title"
-          >{{ post.postTitle }}</router-link
-        >
-        <img :src="post.image" alt="Post Image" class="post-image" />
+        <router-link :to="{ name: 'Visiting', params: { id: post.id } }" class="post-title">{{ post.title
+          }}</router-link>
+        <img :src="post.imagePath" alt="Post Image" class="post-image" />
         <h3 class="store-name">{{ post.storeName }}</h3>
         <p class="likes">💜 Like {{ post.likes }}</p>
       </div>
@@ -29,55 +22,30 @@
 </template>
 
 <script>
-//import axios from 'axios'
+import axios from 'axios';
 
 export default {
   data() {
     return {
       searchQuery: '',
-      posts: [
-        {
-          id: 1,
-          author: '@abcd',
-          postTitle: '경기대 근처 짱이야떡볶이 추천합니다!',
-          image: require('@/assets/tteokbokki.jpg'),
-          storeName: '짱이야 떡볶이',
-          likes: 25,
-        },
-        {
-          id: 2,
-          author: '@puppy',
-          postTitle: '타코집 중에서는 여기가 최고에요 ㅠㅠ',
-          image: require('@/assets/taco.jpg'),
-          storeName: '타코타코팜',
-          likes: 10,
-        },
-        {
-          id: 3,
-          author: '@Imcat',
-          postTitle: '수제피자집 피자홈 강추!',
-          image: require('@/assets/pizza.jpg'),
-          storeName: '피자홈홈',
-          likes: 20,
-        },
-        {
-          id: 4,
-          author: '@hamstar',
-          postTitle: '어머니 손맛 가득한 김치찌개집 추천이요,,',
-          image: require('@/assets/gimchi.jpg'),
-          storeName: '어머니 김치찌개',
-          likes: 14,
-        },
-        // 다른 게시글들...
-      ],
+      posts: [],
     };
+  },
+  mounted() {
+    axios.get('http://localhost:3000/main')
+      .then(response => {
+        this.posts = response.data;
+      })
+      .catch(error => {
+        console.error('Error fetching data:', error);
+      });
   },
   computed: {
     filteredPosts() {
       return this.posts.filter(
         (post) =>
           post.storeName.includes(this.searchQuery) ||
-          post.postTitle.includes(this.searchQuery)
+          post.title.includes(this.searchQuery)
       );
     },
   },
