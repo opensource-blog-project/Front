@@ -9,12 +9,12 @@
     <div class="post-board">
       <div class="post-card" v-for="post in filteredPosts" :key="post.postId">
         <div class="profile">
-          <span class="nickname">{{ post.author }}</span>
+          <span class="nickname">@{{ post.author }}</span>
         </div>
         <router-link :to="{ name: 'Visiting', params: { id: post.id } }" class="post-title">{{ post.title
           }}</router-link>
-        <img :src="post.imagePath" alt="Post Image" class="post-image" />
-        <h3 class="store-name">{{ post.storeName }}</h3>
+        <img :src="post.images" alt="Post Image" class="post-image" />
+        <h3 class="store-name">{{ post.restaurant }}</h3>
         <p class="likes">💜 Like {{ post.likes }}</p>
       </div>
     </div>
@@ -32,7 +32,7 @@ export default {
     };
   },
   mounted() {
-    axios.get('http://localhost:3000/main')
+    axios.get('http://localhost:3000/posts')
       .then(response => {
         this.posts = response.data;
       })
@@ -44,7 +44,7 @@ export default {
     filteredPosts() {
       return this.posts.filter(
         (post) =>
-          post.storeName.includes(this.searchQuery) ||
+          post.restaurant.includes(this.searchQuery) ||
           post.title.includes(this.searchQuery)
       );
     },

@@ -41,6 +41,8 @@ export default {
   },
   data() {
     return {
+      localId:'',
+      localAuthor:'',
       localTitle: '',
       localPhotos: [],
       localBusinessName: '',
@@ -62,7 +64,7 @@ export default {
   },
   methods: {
     goBack() {
-      this.$router.push('/main');
+      this.$router.push('/posts');
     },
     handlePhotoUpload(event) {
       const files = Array.from(event.target.files);
@@ -78,6 +80,8 @@ export default {
         console.log(response.data); // 응답 데이터 콘솔에 출력
         const post = response.data;
 
+        this.localId = post.id;
+        this.localAuthor = post.author;
         this.localTitle = post.title;
         this.localPhotos = post.images || [];
         this.localBusinessName = post.restaurant;
@@ -89,6 +93,10 @@ export default {
     },
     async submitPost() {
       const formData = new FormData();
+      if (this.isEditMode) {
+        formData.append('id', this.localId);
+      }
+      formData.append('author', this.localAuthor);
       formData.append('title', this.localTitle);
       formData.append('content', this.localContent);
       formData.append('restaurant', this.localBusinessName);
@@ -97,21 +105,29 @@ export default {
       });
 
       const url = this.isEditMode
-        ? `http://localhost:3000/posts/${this.id}`
-        : 'http://localhost:3000/posts';
-
-      const method = this.isEditMode ? 'put' : 'post';
+        ? `http://localhost:3000/posts/${this.id}` // 수정 모드일 때 URL
+        : 'http://localhost:3000/posts'; // 새 글 작성 모드일 때 URL
 
       try {
-        const response = await axios({
-          method,
-          url,
-          data: formData,
-        });
-
+        // PUT 요청으로 데이터 전송
+        let response;
+        if (this.isEditMode) {
+          response = await axios.put(url, formData, {
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          });
+        } else {
+          // POST 요청 처리
+          response = await axios.post(url, formData, {
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          });
+        }
         console.log('Response data:', response.data);
         alert(this.isEditMode ? '글 수정이 완료되었습니다!' : '글 작성이 완료되었습니다!');
-        this.$router.push('/main');
+        this.$router.push('/posts');
       } catch (error) {
         console.error('Error:', error);
         alert('오류가 발생했습니다. 다시 시도해주세요.');

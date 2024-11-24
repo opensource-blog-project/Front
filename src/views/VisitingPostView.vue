@@ -1,7 +1,7 @@
 <template>
   <div class="visiting-post-view">
     <div class="left-banner">
-      <router-link to="/main" class="back-link">🏠 홈 화면으로 돌아가기</router-link>
+      <router-link to="/posts" class="back-link">🏠 홈 화면으로 돌아가기</router-link>
       <div class="comments-section">
         <p class="likes" @click="likePost">▼ 💜 Like {{ post.likes }}</p>
         <div class="comment" v-for="comment in comments" :key="comment.id">
@@ -39,7 +39,7 @@
       <div class="images">
         <img v-for="(image, index) in post.images" :key="index" :src="image" class="post-image" />
       </div>
-      <h3 class="store-name">{{ post.storeName }}</h3>
+      <h3 class="store-name">{{ post.restaurant }}</h3>
       <p class="body">{{ post.content }}</p>
     </div>
   </div>
@@ -118,7 +118,6 @@ export default {
     deletePost() {
       if (confirm('정말로 이 글을 삭제하시겠습니까?')) {
         axios.delete(`http://localhost:3000/posts/${this.post.id}`)
-        axios.delete(`http://localhost:3000/main/${this.post.id}`)
           .then(() => {
             console.log('Post deleted');
             this.$router.push({ name: 'Main' }); // 삭제 후 홈으로 이동
@@ -150,7 +149,7 @@ export default {
       axios.post('http://localhost:3000/posts', this.newPost)
         .then(response => {
           console.log('Post created', response.data);
-          this.newPost = { title: '', author: '', imagePath: '', storeName: '', body: '' };
+          this.newPost = { title: '', author: '', images: '', restaurant: '', body: '' };
         })
         .catch(error => {
           console.error('Error creating post:', error);
