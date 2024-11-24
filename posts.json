@@ -1,16 +1,17 @@
 {
   "posts": [
     {
-      "id": "1",
-      "author": "abcd",
-      "title": "경기대 근처 짱이야떡볶이 추천합니다!",
-      "content": "떡볶이 애호가라면 꼭 방문해야 할 최고의 맛집을 소개합니다...",
-      "restaurant": "짱이야 떡볶이",
-      "images": [
-        "image1.jpg",
-        "image2.jpg"
-      ],
-      "likes": 25
+      "author": "puppy",
+      "title": "undefined",
+      "content": "undefined",
+      "restaurant": "undefined",
+      "comment": {
+        "commentid": {
+          "commentWriter": "puppy",
+          "contents": "ㅁ"
+        }
+      },
+      "id": "1"
     },
     {
       "id": "3",
@@ -42,6 +43,18 @@
       "title": "쌀국수맛집",
       "content": "맛나요",
       "restaurant": "띠뿌야쌀국수"
+    },
+    {
+      "content": "타코야 파는 집",
+      "restaurant": "타코야 가게",
+      "id": "da7d"
+    },
+    {
+      "id": "eee9",
+      "author": "",
+      "title": "해산물",
+      "content": "afdsa",
+      "restaurant": "해산물가제"
     }
   ]
 }

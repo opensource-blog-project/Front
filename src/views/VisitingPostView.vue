@@ -79,16 +79,55 @@ export default {
     isAuthor(comment) {
       return comment.author === this.currentUser;
     },
-    addComment() {
-      if (this.newComment.trim()) {
-        this.comments.push({
-          id: Date.now(),
-          author: this.currentUser,
-          text: this.newComment,
-        });
-        this.newComment = '';
+    async addComment() {
+      if (!this.newComment.trim()) {
+        alert("댓글 내용을 입력해주세요.");
+        return;
       }
-    },
+
+      try {
+        const formData = new FormData();
+        // formData.append('id', this.localId);
+        formData.append('author', this.currentUser);
+        formData.append('title', this.title);
+        formData.append('content', this.content);
+        formData.append('restaurant', this.restaurant);
+        formData.append('comment/${commentid}/commentWriter', this.currentUser);
+        formData.append('comment/${commentid}/contents', this.newComment);
+        // this.images.forEach((photo, index) => {
+        //   formData.append(`images[${index}]`, photo);
+        // });
+        const url = `http://localhost:3000/posts/1`
+
+        // PUT 요청으로 데이터 전송
+        let response;
+        response = await axios.put(url, formData, {
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+        console.log('Response data:', response.data);
+
+        // 댓글 목록에 새 댓글 추가
+        this.comments.push({
+          id: response.data.commentId,
+          author: response.data.commentWriter,
+          text: response.data.content,
+        });
+
+        // 입력 필드 초기화
+        this.newComment = "";
+
+        alert("댓글이 성공적으로 작성되었습니다.");
+      } catch (error) {
+        if (error.response && error.response.status === 401) {
+          alert("인증에 실패했습니다. 다시 로그인해주세요.");
+        } else {
+          console.error("댓글 작성 중 오류 발생:", error);
+          alert("댓글 작성에 실패했습니다. 다시 시도해주세요.");
+        }
+      }
+    },    
     editComment(id) {
       const comment = this.comments.find((c) => c.id === id);
       this.editMode = id;
