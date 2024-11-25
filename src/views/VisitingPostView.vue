@@ -1,228 +1,353 @@
 <template>
-    <div class="writing-view">
-      <!-- Home Navigation Link -->
-      <a href="#" @click="goBackToMain" class="back-link"
-        >← 홈 화면으로 돌아가기</a
-      >
-  
-      <!-- Post Content Section -->
-      <div class="post-content">
-        <div class="post-header">
-          <span class="author-nickname">@{{ postAuthor }}</span>
-          <button @click="editPost" class="edit-btn">수정</button>
-          <button @click="confirmDeletePost" class="delete-btn">삭제</button>
-        </div>
-        <h2 class="post-title">{{ postTitle }}</h2>
-  
-        <div class="post-images">
-          <img
-            v-for="(image, index) in postImages"
-            :src="image"
-            :alt="'Post Image ' + (index + 1)"
-            :key="index"
-          />
-        </div>
-        <h3 class="business-name">{{ businessName }}</h3>
-        <p class="post-body">{{ postBody }}</p>
-      </div>
-  
-      <!-- Like and Comment Section -->
-      <div class="comments-banner">
-        <div class="like-section">
-          <span class="like-count">♥ Like {{ likeCount }}</span>
-          <button @click="toggleLike" class="like-btn">♥</button>
-        </div>
-  
-        <!-- Comments List -->
-        <div class="comments-list">
-          <div v-for="(comment, index) in comments" :key="index" class="comment">
-            <span class="comment-author">@{{ comment.author }}</span>
-            <span class="comment-text">{{ comment.text }}</span>
-            <button
-              v-if="comment.isEditable"
-              @click="editComment(index)"
-              class="edit-comment-btn"
-            >
-              ✏️
-            </button>
-            <button
-              v-if="comment.isEditable"
-              @click="deleteComment(index)"
-              class="delete-comment-btn"
-            >
-              🗑️
-            </button>
+  <div class="visiting-post-view">
+    <div class="left-banner">
+      <router-link to="/posts" class="back-link">🏠 홈 화면으로 돌아가기</router-link>
+      <div class="comments-section">
+        <p class="likes" @click="likePost">▼ 💜 Like {{ post.likes }}</p>
+        <div class="comment" v-for="comment in comments" :key="comment.id">
+          <span class="nickname">@{{ comment.author }}</span>
+
+          <!-- 수정 모드일 때와 아닐 때를 구분 -->
+          <div v-if="editMode === comment.id">
+            <input v-model="editedComment" />
+            <button @click="saveComment(comment.id)">저장</button>
+            <button @click="cancelEdit">취소</button>
+          </div>
+          <p v-else class="comment-text">{{ comment.text }}</p>
+
+          <!-- 댓글 작성자일 경우에만 수정 및 삭제 버튼 표시, 수정 중일 때는 숨김 -->
+          <div v-if="isAuthor(comment) && editMode !== comment.id" class="comment-actions">
+            <button @click="editComment(comment.id)">✏️</button>
+            <button @click="deleteComment(comment.id)">🗑️</button>
           </div>
         </div>
-  
-        <!-- Add Comment Input -->
+
         <div class="add-comment">
-          <input v-model="newComment" placeholder="댓글을 입력해주세요" />
+          <input v-model="newComment" placeholder="댓글을 입력해주세요." />
           <button @click="addComment">등록</button>
         </div>
       </div>
     </div>
-  </template>
-  
-  <script>
-  export default {
-    data() {
-      return {
-        postAuthor: 'puppy', // 예시 데이터
-        postTitle: '경기대 근처 짱이야떡볶이 추천합니다!',
-        postImages: ['/path/to/image1.jpg', '/path/to/image2.jpg'], // 이미지 URL
-        businessName: '짱이야 떡볶이',
-        postBody:
-          '떡볶이 애호가라면 꼭 방문해야 할 최고의 맛집을 소개합니다. 경기대 근처의 숨은 보석...',
-        likeCount: 25,
-        comments: [
-          { author: 'abcd', text: '저도 가고싶어요!!', isEditable: false },
-          {
-            author: 'tigerrrr',
-            text: '좋은 정보 감사합니다 🙂',
-            isEditable: true,
-          },
-          {
-            author: 'lmcat',
-            text: '떡볶이 저도 참 좋아해요!',
-            isEditable: false,
-          },
-        ],
-        newComment: '',
-      };
+
+    <div class="post-content">
+      <div v-if="isPostAuthor" class="post-actions">
+        <button @click="navigateToEdit">수정</button>
+        <button @click="deletePost">삭제</button>
+      </div>
+      <p class="author">@{{ post.author }}</p>
+      <h1 class="title">{{ post.title }}</h1>
+      <div class="images">
+        <img v-for="(image, index) in post.images" :key="index" :src="image" class="post-image" />
+      </div>
+      <h3 class="store-name">{{ post.restaurant }}</h3>
+      <p class="body">{{ post.content }}</p>
+    </div>
+  </div>
+</template>
+
+<script>
+import axios from 'axios';
+
+export default {
+  data() {
+    return {
+      post: {},
+      comments: [],
+      newComment: '',
+      currentUser: 'puppy',
+      editMode: null,
+      editedComment: '',
+      isLiking: false // 좋아요 처리 상태 확인
+    };
+  },
+  mounted() {
+    const postId = this.$route.params.id; // URL 파라미터에서 ID를 가져옵니다.
+    axios.get(`http://localhost:3000/posts/${postId}`)
+      .then(response => {
+        this.post = response.data;
+      })
+      .catch(error => {
+        console.error('Error fetching data:', error);
+      });
+  },
+  computed: {
+    isPostAuthor() {
+      return this.post.author === this.currentUser;
     },
-    methods: {
-      goBackToMain() {
-        // 메인 화면으로 돌아가는 로직
-        this.$router.push('/main');
-      },
-      editPost() {
-        // 글 수정 기능
-        alert('글 수정 기능은 아직 구현되지 않았습니다.');
-      },
-      confirmDeletePost() {
-        // 글 삭제 확인 알림
-        if (confirm('삭제하시겠습니까?')) {
-          this.deletePost();
-        }
-      },
-      deletePost() {
-        // 글 삭제 기능
-        alert('글이 삭제되었습니다.');
-        this.$router.push('/main');
-      },
-      toggleLike() {
-        // 좋아요 기능
-        this.likeCount++;
-      },
-      addComment() {
-        if (this.newComment.trim() === '') return;
-        this.comments.push({
-          author: 'currentUser',
-          text: this.newComment,
-          isEditable: true,
+  },
+  methods: {
+    isAuthor(comment) {
+      return comment.author === this.currentUser;
+    },
+    async addComment() {
+      if (!this.newComment.trim()) {
+        alert("댓글 내용을 입력해주세요.");
+        return;
+      }
+
+      try {
+        const formData = new FormData();
+        // formData.append('id', this.localId);
+        formData.append('author', this.currentUser);
+        formData.append('title', this.title);
+        formData.append('content', this.content);
+        formData.append('restaurant', this.restaurant);
+        formData.append('comment/${commentid}/commentWriter', this.currentUser);
+        formData.append('comment/${commentid}/contents', this.newComment);
+        // this.images.forEach((photo, index) => {
+        //   formData.append(`images[${index}]`, photo);
+        // });
+        const url = `http://localhost:3000/posts/1`
+
+        // PUT 요청으로 데이터 전송
+        let response;
+        response = await axios.put(url, formData, {
+          headers: {
+            'Content-Type': 'application/json',
+          },
         });
-        this.newComment = '';
-      },
-      editComment(index) {
-        // 댓글 수정 기능
-        const newText = prompt('댓글을 수정하세요:', this.comments[index].text);
-        if (newText) {
-          this.comments[index].text = newText;
+        console.log('Response data:', response.data);
+
+        // 댓글 목록에 새 댓글 추가
+        this.comments.push({
+          id: response.data.commentId,
+          author: response.data.commentWriter,
+          text: response.data.content,
+        });
+
+        // 입력 필드 초기화
+        this.newComment = "";
+
+        alert("댓글이 성공적으로 작성되었습니다.");
+      } catch (error) {
+        if (error.response && error.response.status === 401) {
+          alert("인증에 실패했습니다. 다시 로그인해주세요.");
+        } else {
+          console.error("댓글 작성 중 오류 발생:", error);
+          alert("댓글 작성에 실패했습니다. 다시 시도해주세요.");
         }
-      },
-      deleteComment(index) {
-        // 댓글 삭제 기능
-        if (confirm('댓글을 삭제하시겠습니까?')) {
-          this.comments.splice(index, 1);
-        }
-      },
+      }
+    },    
+    editComment(id) {
+      const comment = this.comments.find((c) => c.id === id);
+      this.editMode = id;
+      this.editedComment = comment.text;
     },
-  };
-  </script>
-  
-  <style scoped>
-  /* 스타일 설정 */
-  .writing-view {
-    padding: 20px;
+    saveComment(id) {
+      const comment = this.comments.find((c) => c.id === id);
+      if (this.editedComment.trim()) {
+        comment.text = this.editedComment;
+        this.editMode = null;
+        this.editedComment = '';
+      }
+    },
+    cancelEdit() {
+      this.editMode = null;
+      this.editedComment = '';
+    },
+    deleteComment(id) {
+      this.comments = this.comments.filter((c) => c.id !== id);
+    },
+    navigateToEdit() {
+      this.$router.push({
+        name: 'EditPost',
+        params: { id: this.post.id },
+      });
+    },
+    deletePost() {
+      if (confirm('정말로 이 글을 삭제하시겠습니까?')) {
+        axios.delete(`http://localhost:3000/posts/${this.post.id}`)
+          .then(() => {
+            console.log('Post deleted');
+            this.$router.push({ name: 'Main' }); // 삭제 후 홈으로 이동
+          })
+          .catch(error => {
+            console.error('Error deleting post:', error);
+          });
+      }
+    },
+    likePost() {
+      if (this.isLiking) return; // 이미 요청 중이라면 아무것도 하지 않음
+      this.isLiking = true;
+
+      axios.post('/api/pushLike', {
+        postId: this.post.id,
+        username: this.currentUser
+      })
+        .then(response => {
+          this.post.likes = response.data.likes;
+        })
+        .catch(error => {
+          console.error('좋아요 처리 실패:', error);
+        })
+        .finally(() => {
+          this.isLiking = false; // 요청 완료 후 상태 초기화
+        });
+    },
+    createPost() {
+      axios.post('http://localhost:3000/posts', this.newPost)
+        .then(response => {
+          console.log('Post created', response.data);
+          this.newPost = { title: '', author: '', images: '', restaurant: '', body: '' };
+        })
+        .catch(error => {
+          console.error('Error creating post:', error);
+        });
+    }
   }
-  .back-link {
-    font-size: 14px;
-    color: #555;
-    text-decoration: none;
-  }
-  .post-content {
-    margin-top: 20px;
-  }
-  .post-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-  }
-  .author-nickname {
-    font-weight: bold;
-  }
-  .edit-btn,
-  .delete-btn {
-    background-color: #f5f5f5;
-    border: none;
-    cursor: pointer;
-  }
-  .post-title {
-    font-size: 24px;
-    margin-top: 10px;
-  }
-  .post-images img {
-    width: 100%;
-    max-width: 300px;
-    margin: 10px;
-  }
-  .business-name {
-    font-size: 18px;
-    font-weight: bold;
-  }
-  .post-body {
-    margin-top: 20px;
-    line-height: 1.5;
-  }
-  .comments-banner {
-    margin-top: 30px;
-  }
-  .like-section {
-    display: flex;
-    justify-content: space-between;
-  }
-  .like-count {
-    font-size: 16px;
-  }
-  .like-btn {
-    background: none;
-    border: none;
-    font-size: 16px;
-    cursor: pointer;
-  }
-  .comments-list {
-    margin-top: 20px;
-  }
-  .comment {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 5px 0;
-  }
-  .comment-author {
-    font-weight: bold;
-  }
-  .comment-text {
-    margin-left: 10px;
-  }
-  .add-comment {
-    margin-top: 10px;
-    display: flex;
-    justify-content: space-between;
-  }
-  .add-comment input {
-    flex: 1;
-    margin-right: 10px;
-  }
-  </style>
+};
+</script>
+
+<style scoped>
+.visiting-post-view {
+  display: flex;
+  padding: 20px;
+}
+
+.left-banner {
+  width: 250px;
+  margin-right: 20px;
+  background-color: #f0f0f0;
+  padding: 10px;
+  border-radius: 8px;
+}
+
+.back-link {
+  display: block;
+  margin-bottom: 10px;
+  font-size: 14px;
+  color: #333;
+  text-decoration: none;
+}
+
+.comments-section {
+  margin-top: 10px;
+}
+
+.likes {
+  font-weight: bold;
+  margin-bottom: 10px;
+}
+
+.comment {
+  display: flex;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.profile-image {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  margin-right: 8px;
+}
+
+.nickname {
+  font-weight: bold;
+  margin-right: 8px;
+}
+
+.comment-text {
+  flex: 1;
+}
+
+.comment-actions button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  margin-left: 5px;
+}
+
+.add-comment {
+  display: flex;
+  margin-top: 10px;
+}
+
+.add-comment input {
+  flex: 1;
+  padding: 5px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+.add-comment button {
+  margin-left: 5px;
+  padding: 5px 10px;
+  background-color: black;
+  color: white;
+  border: none;
+  cursor: pointer;
+}
+
+.post-content {
+  flex: 1;
+}
+
+.post-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 10px;
+}
+
+.post-actions button {
+  background-color: black;
+  color: white;
+  border: none;
+  padding: 5px 10px;
+  margin-left: 5px;
+  cursor: pointer;
+}
+
+.author {
+  font-size: 14px;
+  color: #555;
+}
+
+.title {
+  font-size: 24px;
+  margin: 10px 0;
+}
+
+.images {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.post-image {
+  width: 100%;
+  border-radius: 5px;
+}
+
+.store-name {
+  font-size: 18px;
+  margin: 5px 0;
+}
+
+.body {
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+.new-post {
+  margin-top: 20px;
+}
+
+.new-post input,
+.new-post textarea {
+  display: block;
+  width: 100%;
+  margin-bottom: 10px;
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+.new-post button {
+  padding: 10px 20px;
+  background-color: black;
+  color: white;
+  border: none;
+  cursor: pointer;
+}
+</style>
