@@ -9,9 +9,9 @@
     <div class="post-board">
       <div class="post-card" v-for="post in filteredPosts" :key="post.postId">
         <div class="profile">
-          <span class="nickname">@{{ post.author }}</span>
+          <span class="nickname">@{{ post.postWriter }}</span>
         </div>
-        <router-link :to="{ name: 'Visiting', params: { id: post.id } }" class="post-title">{{ post.title
+        <router-link :to="{ name: 'Visiting', params: { id: post.postId } }" class="post-title">{{ post.title
           }}</router-link>
         <img :src="post.images" alt="Post Image" class="post-image" />
         <h3 class="store-name">{{ post.restaurant }}</h3>
@@ -32,22 +32,27 @@ export default {
     };
   },
   mounted() {
-    axios.get('http://localhost:3000/posts')
-      .then(response => {
-        this.posts = response.data;
-      })
-      .catch(error => {
-        console.error('Error fetching data:', error);
-      });
+  axios.get('http://localhost:8080/posts/list')
+    .then(response => {
+      console.log(response.data); // 응답 데이터 출력
+      this.posts = Array.isArray(response.data) ? response.data : [];
+    })
+    .catch(error => {
+      console.error('Error fetching data:', error);
+      this.posts = []; // 오류 발생 시 빈 배열로 초기화
+    });
   },
   computed: {
-    filteredPosts() {
-      return this.posts.filter(
-        (post) =>
-          post.restaurant.includes(this.searchQuery) ||
-          post.title.includes(this.searchQuery)
-      );
-    },
+  filteredPosts() {
+    if (!Array.isArray(this.posts)) {
+      return [];
+    }
+    return this.posts.filter(
+      (post) =>
+        post.restaurant.includes(this.searchQuery) ||
+        post.title.includes(this.searchQuery)
+    );
+  },
   },
   methods: {
     search() {

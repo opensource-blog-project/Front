@@ -6,6 +6,7 @@ import NewPostView from '../views/NewPostView.vue';
 import VisitingPostView from '../views/VisitingPostView.vue';
 import MyPageView from "@/views/MyPageView.vue";
 
+
 const routes = [
   { path: '/', name: 'Login', component: LoginView },
   { path: '/api/v1/user', name: 'SignUp', component: SignUpView },

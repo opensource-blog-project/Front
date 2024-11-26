@@ -34,15 +34,13 @@ import axios from 'axios';
 
 export default {
   props: {
-    id: {
+    postId: {
       type: String,
       default: null, // null일 경우 새 글 작성 모드로 간주
     },
   },
   data() {
     return {
-      localId:'',
-      localAuthor:'',
       localTitle: '',
       localPhotos: [],
       localBusinessName: '',
@@ -51,15 +49,17 @@ export default {
   },
   computed: {
     isEditMode() {
-      return !!this.id; // id가 있으면 수정 모드
+      return !!this.postId; // postId가 있으면 수정 모드
+    },
+    photoCountMessage() {
+      return this.localPhotos.length > 0
+        ? `사진 ${this.localPhotos.length}개 선택됨`
+        : '사진을 선택해주세요.';
     },
   },
   async created() {
     if (this.isEditMode) {
-      console.log('수정 모드입니다. id:', this.id);
       await this.loadPostData();
-    } else {
-      console.log('새 글 작성 모드입니다.');
     }
   },
   methods: {
@@ -76,12 +76,13 @@ export default {
     },
     async loadPostData() {
       try {
-        const response = await axios.get(`http://localhost:3000/posts/${this.id}`);
-        console.log(response.data); // 응답 데이터 콘솔에 출력
+        const response = await axios.get(`http://localhost:8080/posts/${this.postId}`, {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
+          },
+        });
         const post = response.data;
 
-        this.localId = post.id;
-        this.localAuthor = post.author;
         this.localTitle = post.title;
         this.localPhotos = post.images || [];
         this.localBusinessName = post.restaurant;
@@ -92,52 +93,57 @@ export default {
       }
     },
     async submitPost() {
-      const formData = new FormData();
-      if (this.isEditMode) {
-        formData.append('id', this.localId);
-      }
-      formData.append('author', this.localAuthor);
-      formData.append('title', this.localTitle);
-      formData.append('content', this.localContent);
-      formData.append('restaurant', this.localBusinessName);
-      this.localPhotos.forEach((photo, index) => {
-        formData.append(`images[${index}]`, photo);
+        const formData = new FormData();
+
+        const post = {
+          title: this.localTitle,
+          content: this.localContent,
+          restaurant: this.localBusinessName,
+          hashTagIds: this.localHashTags || [] 
+        };
+
+    formData.append('post', new Blob([JSON.stringify(post)], { type: 'application/json' }));
+
+    this.localPhotos.forEach((photo) => {
+    formData.append('images', photo);
+    });
+
+    const url = this.isEditMode
+      ? `http://localhost:8080/posts/${this.id}/update`
+      : 'http://localhost:8080/posts/create';
+
+    const method = this.isEditMode ? 'put' : 'post';
+
+    try {
+      // Axios 요청 로그 출력
+      console.log('Authorization:', `Bearer ${localStorage.getItem('accessToken')}`);
+      console.log('URL:', url);
+      console.log('Method:', method);
+      console.log('FormData:', formData);
+
+      await axios({
+        method,
+        url,
+        headers: {
+          'Content-Type': 'multipart/form-data',
+          Authorization: `Bearer ${localStorage.getItem('accessToken')}`, // Bearer 토큰 설정
+        },
+        data: formData,
       });
 
-      const url = this.isEditMode
-        ? `http://localhost:3000/posts/${this.id}` // 수정 모드일 때 URL
-        : 'http://localhost:3000/posts'; // 새 글 작성 모드일 때 URL
-
-      try {
-        // PUT 요청으로 데이터 전송
-        let response;
-        if (this.isEditMode) {
-          response = await axios.put(url, formData, {
-            headers: {
-              'Content-Type': 'application/json',
-            },
-          });
-        } else {
-          // POST 요청 처리
-          response = await axios.post(url, formData, {
-            headers: {
-              'Content-Type': 'application/json',
-            },
-          });
-        }
-        console.log('Response data:', response.data);
-        alert(this.isEditMode ? '글 수정이 완료되었습니다!' : '글 작성이 완료되었습니다!');
-        this.$router.push('/posts');
+      alert(this.isEditMode ? '글 수정이 완료되었습니다!' : '글 작성이 완료되었습니다!');
+      this.$router.push('/posts');
       } catch (error) {
-        console.error('Error:', error);
-        alert('오류가 발생했습니다. 다시 시도해주세요.');
+      console.error('오류가 발생했습니다:', error);
+      alert('오류가 발생했습니다. 다시 시도해주세요.');
       }
-    },
+    }
   },
 };
 </script>
 
 <style scoped>
+/* 스타일은 그대로 유지 */
 .new-post-container {
   max-width: 600px;
   margin: 30px auto;
@@ -159,10 +165,6 @@ export default {
   font-size: 14px;
 }
 
-.back-link:hover {
-  background-color: #555;
-}
-
 .form-group {
   margin-bottom: 20px;
 }
@@ -181,21 +183,10 @@ export default {
   border: 1px solid #ccc;
   border-radius: 4px;
   font-size: 14px;
-  outline: none;
 }
 
 .photo-upload {
   margin-bottom: 20px;
-}
-
-.photo-upload input {
-  margin-top: 8px;
-}
-
-.photo-upload p {
-  margin-top: 8px;
-  font-size: 12px;
-  color: #555;
 }
 
 .submit-button {
@@ -208,7 +199,6 @@ export default {
   border: none;
   border-radius: 4px;
   cursor: pointer;
-  transition: background-color 0.3s ease;
 }
 
 .submit-button:hover {

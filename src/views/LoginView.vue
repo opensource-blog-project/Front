@@ -4,11 +4,11 @@
     <p>나만 알기 아까운 전국 각지 맛집들을 공유해보세요!</p>
 
     <div class="login-form">
-      <label for="username">Id</label>
-      <input type="text" id="username" v-model="username" placeholder="Value" />
+      <label for="userId">Id</label>
+      <input type="text" id="userId" v-model="userId" placeholder="아이디를 입력하세요" />
 
       <label for="password">Password</label>
-      <input type="password" id="password" v-model="password" placeholder="Value" />
+      <input type="password" id="password" v-model="password" placeholder="비밀번호를 입력하세요" />
 
       <button @click="login">로그인</button>
 
@@ -21,21 +21,45 @@
 </template>
 
 <script>
+import axios from 'axios';
+
 export default {
   data() {
     return {
-      username: '',
+      userId: '', // userId로 변수명 수정
       password: '',
     };
   },
   methods: {
-    login() {
-      // 로그인 로직을 여기에 구현
-      if (this.username && this.password) {
-        // 인증 성공 후 메인 화면으로 이동
-        this.$router.push('/posts');
-      } else {
+    async login() {
+      if (!this.userId || !this.password) {
         alert('아이디와 비밀번호를 입력해주세요.');
+        return;
+      }
+
+      try {
+        // POST 요청 보내기
+        const response = await axios.post('http://localhost:8080/api/user/token', {
+          userId: this.userId,
+          password: this.password,
+        });
+
+        // 로그인 성공
+        if (response.data.success) {
+          const token = response.data.data.accessToken; // 토큰 추출
+          localStorage.setItem('accessToken', token); // 토큰을 localStorage에 저장
+          alert('로그인에 성공했습니다!');
+          this.$router.push('/posts'); // 메인 페이지로 이동
+        } else {
+          alert('로그인에 실패했습니다.');
+        }
+      } catch (error) {
+        console.error('Error:', error);
+        if (error.response && error.response.status === 401) {
+          alert('아이디 또는 비밀번호가 잘못되었습니다.');
+        } else {
+          alert('서버와의 통신 중 문제가 발생했습니다.');
+        }
       }
     },
   },
