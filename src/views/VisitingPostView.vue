@@ -37,7 +37,8 @@
       <p class="author">@{{ post.postWriter }}</p>
       <h1 class="title">{{ post.title }}</h1>
       <div class="images">
-        <img v-for="(image, index) in post.images" :key="index" :src="image" class="post-image" />
+        <!-- postImage가 Base64 문자열로 처리 -->
+        <img v-if="post.postImage" :src="'data:image/png;base64,' + post.postImage" class="post-image" />
       </div>
       <h3 class="store-name">{{ post.restaurant }}</h3>
       <p class="body">{{ post.content }}</p>
@@ -47,7 +48,7 @@
 
 <script>
 import axios from 'axios';
-//import EventBus from '@/utils/eventBus';
+import EventBus from '@/utils/eventBus';
 
 
 export default {
@@ -58,16 +59,22 @@ export default {
       newComment: '',
       editMode: null,
       editedComment: '',
+      currentUser: '',
       isLiking: false // 좋아요 처리 상태 확인
     };
   },
+  created() {
+    EventBus.on('updateCurrentUser', (username) => {
+      this.currentUser = username;
+      localStorage.setItem('currentUser', username); // localStorage 동기화
+    });
+  },
+  beforeUnmount() {
+  EventBus.off('updateCurrentUser'); // 구독 해제
+  },
   computed: {
-    currentUser() {
-      // 현재 로그인한 사용자의 정보를 로컬 스토리지에서 가져옵니다.
-      return localStorage.getItem('username');
-    },
     isPostAuthor() {
-      return this.post.author === this.currentUser;
+      return this.post.postWriter === this.currentUser;
     },
   },
   mounted() {
@@ -296,8 +303,12 @@ export default {
 }
 
 .title {
-  font-size: 24px;
-  margin: 10px 0;
+  font-size: 30px;
+  margin: 20px 0;
+  text-align: center;
+  background-color: #f0f0f0;
+  padding: 20px;
+  display: inline-block;
 }
 
 .images {
@@ -307,17 +318,17 @@ export default {
 }
 
 .post-image {
-  width: 100%;
+  width: 40%;
   border-radius: 5px;
 }
 
 .store-name {
-  font-size: 18px;
-  margin: 5px 0;
+  font-size: 25px;
+  margin: 10px 0;
 }
 
 .body {
-  font-size: 16px;
+  font-size: 20px;
   line-height: 1.5;
 }
 
