@@ -5,7 +5,7 @@
       <div class="comments-section">
         <p class="likes" @click="likePost">▼ 💜 Like {{ post.likes }}</p>
         <div class="comment" v-for="comment in comments" :key="comment.id">
-          <span class="nickname">@{{ comment.author }}</span>
+          <span class="nickname">@{{ comment.userId }}</span>
 
           <!-- 수정 모드일 때와 아닐 때를 구분 -->
           <div v-if="editMode === comment.id">
@@ -34,7 +34,7 @@
         <button @click="navigateToEdit">수정</button>
         <button @click="deletePost">삭제</button>
       </div>
-      <p class="author">@{{ post.author }}</p>
+      <p class="author">@{{ post.postWriter }}</p>
       <h1 class="title">{{ post.title }}</h1>
       <div class="images">
         <img v-for="(image, index) in post.images" :key="index" :src="image" class="post-image" />
@@ -47,6 +47,8 @@
 
 <script>
 import axios from 'axios';
+//import EventBus from '@/utils/eventBus';
+
 
 export default {
   data() {
@@ -54,26 +56,34 @@ export default {
       post: {},
       comments: [],
       newComment: '',
-      currentUser: 'puppy',
       editMode: null,
       editedComment: '',
       isLiking: false // 좋아요 처리 상태 확인
     };
   },
+  computed: {
+    currentUser() {
+      // 현재 로그인한 사용자의 정보를 로컬 스토리지에서 가져옵니다.
+      return localStorage.getItem('username');
+    },
+    isPostAuthor() {
+      return this.post.author === this.currentUser;
+    },
+  },
   mounted() {
     const postId = this.$route.params.id; // URL 파라미터에서 ID를 가져옵니다.
-    axios.get(`http://localhost:3000/posts/${postId}`)
+    axios.get(`http://localhost:8080/posts/${postId}`, {
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
+      },
+    })
       .then(response => {
         this.post = response.data;
+        this.comments = response.data.comments; // 댓글 데이터도 함께 가져옵니다.
       })
       .catch(error => {
         console.error('Error fetching data:', error);
       });
-  },
-  computed: {
-    isPostAuthor() {
-      return this.post.author === this.currentUser;
-    },
   },
   methods: {
     isAuthor(comment) {
@@ -87,33 +97,18 @@ export default {
 
       try {
         const formData = new FormData();
-        // formData.append('id', this.localId);
         formData.append('author', this.currentUser);
-        formData.append('title', this.title);
-        formData.append('content', this.content);
-        formData.append('restaurant', this.restaurant);
-        formData.append('comment/${commentid}/commentWriter', this.currentUser);
-        formData.append('comment/${commentid}/contents', this.newComment);
-        // this.images.forEach((photo, index) => {
-        //   formData.append(`images[${index}]`, photo);
-        // });
-        const url = `http://localhost:3000/posts/1`
+        formData.append('content', this.newComment);
 
-        // PUT 요청으로 데이터 전송
-        let response;
-        response = await axios.put(url, formData, {
+        const response = await axios.post(`http://localhost:8080/posts/${this.post.id}/comments`, formData, {
           headers: {
-            'Content-Type': 'application/json',
+            'Content-Type': 'multipart/form-data',
+            Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
           },
         });
-        console.log('Response data:', response.data);
 
         // 댓글 목록에 새 댓글 추가
-        this.comments.push({
-          id: response.data.commentId,
-          author: response.data.commentWriter,
-          text: response.data.content,
-        });
+        this.comments.push(response.data);
 
         // 입력 필드 초기화
         this.newComment = "";
@@ -127,7 +122,7 @@ export default {
           alert("댓글 작성에 실패했습니다. 다시 시도해주세요.");
         }
       }
-    },    
+    },
     editComment(id) {
       const comment = this.comments.find((c) => c.id === id);
       this.editMode = id;
@@ -156,7 +151,11 @@ export default {
     },
     deletePost() {
       if (confirm('정말로 이 글을 삭제하시겠습니까?')) {
-        axios.delete(`http://localhost:3000/posts/${this.post.id}`)
+        axios.delete(`http://localhost:8080/posts/${this.post.id}`, {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
+          },
+        })
           .then(() => {
             console.log('Post deleted');
             this.$router.push({ name: 'Main' }); // 삭제 후 홈으로 이동
@@ -170,9 +169,12 @@ export default {
       if (this.isLiking) return; // 이미 요청 중이라면 아무것도 하지 않음
       this.isLiking = true;
 
-      axios.post('/api/pushLike', {
-        postId: this.post.id,
+      axios.post(`http://localhost:8080/posts/${this.post.id}/like`, {
         username: this.currentUser
+      }, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
+        },
       })
         .then(response => {
           this.post.likes = response.data.likes;
@@ -182,16 +184,6 @@ export default {
         })
         .finally(() => {
           this.isLiking = false; // 요청 완료 후 상태 초기화
-        });
-    },
-    createPost() {
-      axios.post('http://localhost:3000/posts', this.newPost)
-        .then(response => {
-          console.log('Post created', response.data);
-          this.newPost = { title: '', author: '', images: '', restaurant: '', body: '' };
-        })
-        .catch(error => {
-          console.error('Error creating post:', error);
         });
     }
   }

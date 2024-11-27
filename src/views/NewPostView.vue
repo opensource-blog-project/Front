@@ -1,6 +1,6 @@
 <template>
   <div class="new-post-container">
-    <a @click="goBack" class="back-link">← 홈 화면으로 돌아가기</a>
+    <button @click="goBack" class="back-link">← 홈 화면으로 돌아가기</button>
 
     <div class="form-group">
       <label for="title">제목</label>
@@ -31,6 +31,7 @@
 
 <script>
 import axios from 'axios';
+//import { EventBus } from '@/utils/eventBus';
 
 export default {
   props: {
@@ -152,6 +153,9 @@ export default {
   border-radius: 8px;
   background-color: #f9f9f9;
   box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+  position: relative;
+  top: 50%;
+  transform: translateY();
 }
 
 .back-link {
@@ -163,6 +167,10 @@ export default {
   border-radius: 4px;
   text-decoration: none;
   font-size: 14px;
+}
+
+.back-link:hover {
+  background-color: #535353;
 }
 
 .form-group {
@@ -195,13 +203,13 @@ export default {
   font-size: 16px;
   font-weight: bold;
   color: white;
-  background-color: #007bff;
+  background-color: #333;
   border: none;
   border-radius: 4px;
   cursor: pointer;
 }
 
 .submit-button:hover {
-  background-color: #0056b3;
+  background-color: #535353;
 }
 </style>

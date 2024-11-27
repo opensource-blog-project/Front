@@ -14,7 +14,7 @@
 
       <div class="signup-link">
         <p>아직 회원이 아니시라면?</p>
-        <router-link to="/api/v1/user">회원가입</router-link>
+        <router-link to="/signup">회원가입</router-link>
       </div>
     </div>
   </div>
@@ -22,6 +22,8 @@
 
 <script>
 import axios from 'axios';
+import EventBus from '@/utils/eventBus';
+
 
 export default {
   data() {
@@ -32,34 +34,28 @@ export default {
   },
   methods: {
     async login() {
-      if (!this.userId || !this.password) {
-        alert('아이디와 비밀번호를 입력해주세요.');
-        return;
-      }
-
       try {
-        // POST 요청 보내기
         const response = await axios.post('http://localhost:8080/api/user/token', {
           userId: this.userId,
           password: this.password,
         });
 
-        // 로그인 성공
         if (response.data.success) {
-          const token = response.data.data.accessToken; // 토큰 추출
-          localStorage.setItem('accessToken', token); // 토큰을 localStorage에 저장
+          const token = response.data.data.accessToken;
+          const username = response.data.data.username;
+
+          localStorage.setItem('accessToken', token);
+          localStorage.setItem('currentUser', username); // username 저장
+          EventBus.emit('updateCurrentUser', username); // 이벤트 전송
+          
           alert('로그인에 성공했습니다!');
-          this.$router.push('/posts'); // 메인 페이지로 이동
+          this.$router.push('/posts');
         } else {
           alert('로그인에 실패했습니다.');
         }
       } catch (error) {
-        console.error('Error:', error);
-        if (error.response && error.response.status === 401) {
-          alert('아이디 또는 비밀번호가 잘못되었습니다.');
-        } else {
-          alert('서버와의 통신 중 문제가 발생했습니다.');
-        }
+        console.error(error);
+        alert('로그인 중 문제가 발생했습니다.');
       }
     },
   },
