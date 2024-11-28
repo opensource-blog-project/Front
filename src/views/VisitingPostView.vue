@@ -76,10 +76,15 @@ export default {
       return this.post.postWriter === this.currentUser;
     },
   },
-  mounted() {
+  async mounted() {
     const postId = this.$route.params.id; // URL 파라미터에서 ID를 가져옵니다.
-    this.fetchPostData(postId);
-    this.fetchComments(postId);
+    console.log("postId:", postId);  // console에 postId 값 출력
+    // postId가 undefined일 경우, 오류 메시지 출력
+    if (!postId) {
+      console.error("postId가 제대로 전달되지 않았습니다.");
+    }
+    await this.fetchPostData(postId);
+    await this.fetchComments(postId);
   },
   methods: {
     async fetchPostData(postId) {
@@ -90,6 +95,7 @@ export default {
           },
         });
         this.post = response.data;
+        console.log("post data:", this.post);  // 서버에서 받은 데이터 확인
       } catch (error) {
         console.error('Error fetching post data:', error);
       }
@@ -109,40 +115,36 @@ export default {
     isAuthor(comment) {
       return comment.commentWriter === this.currentUser;
     },
+    
     async addComment() {
-      if (!this.newComment.trim()) {
-        alert('댓글 내용을 입력해주세요.');
+      if (!this.post.postId) {
+        console.error('Post ID is not available!');
         return;
       }
-
-      try {
-        const response = await axios.post(
-          `http://localhost:8080/posts/${this.post.id}/comments`,
-          {
-            commentWriter: this.currentUser,
-            content: this.newComment,
-          },
-          {
-            headers: {
-              Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
-            },
-          }
-        );
-
-        // 댓글 목록 갱신
-        this.comments.push(response.data);
-
-        // 입력 필드 초기화
-        this.newComment = '';
-        alert('댓글이 성공적으로 작성되었습니다.');
-      } catch (error) {
-        if (error.response && error.response.status === 401) {
-          alert('인증에 실패했습니다. 다시 로그인해주세요.');
-        } else {
-          console.error('댓글 작성 중 오류 발생:', error);
-          alert('댓글 작성에 실패했습니다. 다시 시도해주세요.');
+      axios.post(`http://localhost:8080/posts/${this.post.postId}/comment/create`, { content: this.newComment }, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
         }
-      }
+      })
+      .then(response => {
+        console.log('댓글 작성 성공:', response.data);
+        this.comments.push(response.data); // 댓글을 맨 앞에 추가 (순서에 따라 push도 가능)
+        this.newComment = ''; // 입력 필드 초기화
+      })
+      .catch(error => {
+        console.error('댓글 작성 오류:', error.response);
+        if (error.response) {
+          // 서버의 오류 응답을 확인
+          console.log('서버 응답 상태 코드:', error.response.status);
+          console.log('서버 응답 내용:', error.response.data);
+        } else if (error.request) {
+          // 요청은 보내졌지만 응답이 없을 경우
+          console.log('요청 보내졌지만 응답 없음:', error.request);
+        } else {
+          // 요청 설정 오류
+          console.log('Axios 요청 설정 오류:', error.message);
+        }
+      });
     },
     editComment(id) {
       const comment = this.comments.find((c) => c.commentId === id);
