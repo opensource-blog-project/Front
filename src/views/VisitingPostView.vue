@@ -179,7 +179,7 @@ export default {
     },
     deletePost() {
       if (confirm('정말로 이 글을 삭제하시겠습니까?')) {
-        axios.delete(`http://localhost:8080/posts/${this.post.id}`, {
+        axios.delete(`http://localhost:8080/posts/${this.post.postId}/delete`, {
           headers: {
             Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
           },

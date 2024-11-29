@@ -34,12 +34,6 @@ import axios from 'axios';
 //import { EventBus } from '@/utils/eventBus';
 
 export default {
-  //props: {
-  //  postId: {
-  //    type: String,
-  //    default: null, // null일 경우 새 글 작성 모드로 간주
-  //  },
-  //},
   data() {
       return {
       localTitle: this.$route.query.title || '', // 쿼리로 전달된 제목
