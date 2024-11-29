@@ -168,8 +168,13 @@ export default {
     },
     navigateToEdit() {
       this.$router.push({
-        name: 'EditPost',
-        params: { id: this.post.id },
+        name: 'NewPost',  // NewPostView.vue로 라우팅
+        query: {
+          id: this.post.postId, // ID를 query로 전달
+          title: this.post.title,
+          restaurant: this.post.restaurant,
+          content: this.post.content,
+        },
       });
     },
     deletePost() {
