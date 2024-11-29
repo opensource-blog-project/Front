@@ -58,7 +58,7 @@ export default {
       newComment: '',
       editMode: null,
       editedComment: '',
-      currentUser: '',
+      currentUser: localStorage.getItem('currentUser') || '', // 초기값 설정
       isLiking: false // 좋아요 처리 상태 확인
     };
   },
