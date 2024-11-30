@@ -3,7 +3,9 @@
     <div class="left-banner">
       <router-link to="/posts" class="back-link">🏠 홈 화면으로 돌아가기</router-link>
       <div class="comments-section">
-        <p class="likes" @click="likePost">▼ 💜 Like {{ post.likes }}</p>
+        <p class="likes" @click="likePost">
+          ▼ 💜 Like {{ likeCounts[post.postId] || 0 }}
+        </p>
         <div class="comment" v-for="comment in comments" :key="comment.commentId">
           <span class="nickname">@{{ comment.commentWriter }}</span>
 
@@ -60,6 +62,8 @@ export default {
       editedComment: '',
       currentUser: localStorage.getItem('currentUser') || '',
       isLiking: false,
+      likeCounts: {}, // 좋아요 개수를 관리하는 객체
+      hasLiked: false, // 현재 사용자가 좋아요를 눌렀는지 여부
     };
   },
   created() {
@@ -83,6 +87,9 @@ export default {
     }
     await this.fetchPostData(postId);
     await this.fetchComments(postId);
+    await this.fetchLikeCount(postId); // 해당 게시글의 좋아요 개수도 가져오기
+    // 좋아요 상태를 클라이언트에서 관리
+    this.hasLiked = localStorage.getItem(`liked_${postId}`) === 'true'; // 클라이언트에서 관리
   },
   methods: {
     async fetchPostData(postId) {
@@ -107,6 +114,19 @@ export default {
         this.comments = response.data.content;
       } catch (error) {
         console.error('Error fetching comments:', error);
+      }
+    },
+    async fetchLikeCount(postId) {
+      try {
+        const response = await axios.get(`http://localhost:8080/posts/${postId}/like-count`, {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
+          },
+        });
+        this.likeCounts[postId] = response.data || 0; // 응답이 숫자일 경우 바로 할당
+      } catch (error) {
+        console.error(`Error fetching like count for post ${postId}:`, error);
+        this.likeCounts[postId] = 0; // 오류 발생 시 기본값 0으로 설정
       }
     },
     isAuthor(comment) {
@@ -201,34 +221,46 @@ export default {
         }
       }
     },
-    likePost() {
+    async likePost() {
       if (this.isLiking) return;
       this.isLiking = true;
 
-      axios
-        .post(
-          `http://localhost:8080/posts/${this.post.id}/like`,
-          { username: this.currentUser },
+      // 즉시 좋아요 개수 변경
+      const postId = this.post.postId;
+      this.likeCounts[postId] = this.hasLiked ? this.likeCounts[postId] - 1 : this.likeCounts[postId] + 1;
+      this.hasLiked = !this.hasLiked; // 좋아요 상태 토글
+      localStorage.setItem(`liked_${postId}`, this.hasLiked.toString()); // 상태 로컬 저장
+
+      try {
+        // 서버에 좋아요 상태 전송
+        const response = await axios.post(
+          `http://localhost:8080/posts/${postId}/push-like`,
+          {},
           {
             headers: {
               Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
             },
           }
-        )
-        .then((response) => {
-          this.post.likes = response.data.likes;
-        })
-        .catch((error) => {
-          console.error('좋아요 처리 실패:', error);
-        })
-        .finally(() => {
-          this.isLiking = false;
-        });
-    },
+        );
+        // 서버에서 받은 응답이 실패하면 상태를 원상태로 복구
+        if (!response.data.success) {
+          this.likeCounts[postId] = this.hasLiked ? this.likeCounts[postId] - 1 : this.likeCounts[postId] + 1;
+          this.hasLiked = !this.hasLiked;
+          localStorage.setItem(`liked_${postId}`, this.hasLiked.toString());
+        }
+      } catch (error) {
+        console.error('좋아요 처리 실패:', error);
+        // 서버 통신 실패 시 상태를 되돌림
+        this.likeCounts[postId] = this.hasLiked ? this.likeCounts[postId] - 1 : this.likeCounts[postId] + 1;
+        this.hasLiked = !this.hasLiked;
+        localStorage.setItem(`liked_${postId}`, this.hasLiked.toString());
+      } finally {
+        this.isLiking = false;
+      }
+    }
   },
 };
 </script>
-
 
 <style scoped>
 .visiting-post-view {
