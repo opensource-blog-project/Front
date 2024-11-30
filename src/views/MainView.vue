@@ -7,8 +7,10 @@
 
     <h1 class="title">맛집블로그</h1>
     <div class="search-bar-container">
-      <input type="text" v-model="searchQuery" placeholder="검색어를 입력하세요" />
+      <button @click="toggleSearchMode" class="search-mode-btn">{{ searchMode === 'tag' ? '일반 검색' : '태그로 검색하기' }}</button>
+      <input type="text" v-model="searchQuery" :placeholder="searchMode === 'tag' ? '태그를 입력하세요' : '검색어를 입력하세요'" />
       <button @click="goToNewPost">New Post</button>
+      <span class="latest-sort"> ▼최신순▼</span>
     </div>
 
     <div class="post-board">
@@ -47,6 +49,7 @@ export default {
       posts: [],
       likeCounts: {}, // 좋아요 개수 저장
       currentUser: localStorage.getItem('currentUser') || null,
+      searchMode: 'normal', // 검색 모드 추가
     };
   },
   created() {
@@ -79,16 +82,22 @@ export default {
       if (!Array.isArray(this.posts)) {
         return [];
       }
-      return this.posts.filter(
-        (post) =>
-          post.restaurant.includes(this.searchQuery) ||
-          post.title.includes(this.searchQuery)
-      );
+      if (this.searchMode === 'tag') {
+        return this.posts.filter((post) =>
+          post.hashTags.some((tag) => tag.name.includes(this.searchQuery))
+        );
+      } else {
+        return this.posts.filter(
+          (post) =>
+            post.restaurant.includes(this.searchQuery) ||
+            post.title.includes(this.searchQuery)
+        );
+      }
     },
   },
   methods: {
     async fetchLikeCount(postId) {
-  try {
+      try {
         const response = await axios.get(`http://localhost:8080/posts/${postId}/like-count`, {
           headers: {
             Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
@@ -116,6 +125,9 @@ export default {
         console.error('Error fetching all like counts:', error);
       }
     },
+    toggleSearchMode() {
+      this.searchMode = this.searchMode === 'tag' ? 'normal' : 'tag';
+    },
     goToNewPost() {
       this.$router.push('/posts/create');
     },
@@ -142,7 +154,7 @@ input {
 }
 
 .title {
-  font-size: 2rem;
+  font-size: 3rem;
   margin-bottom: 10px;
 }
 
@@ -150,9 +162,9 @@ input {
   display: flex;
   justify-content: center; /* 컨테이너 안의 검색바와 버튼을 수평으로 정렬 */
   align-items: center; /* 컨테이너 안의 요소를 수직으로 정렬 */
-  margin-bottom: 20px;
+  margin-bottom: 30px;
   width: 100%; /* 컨테이너 너비를 화면 크기에 맞춤 */
-  max-width: 600px; /* 검색바와 버튼을 포함한 최대 너비 */
+  max-width: 800px; /* 검색바와 버튼을 포함한 최대 너비 */
   margin: 0 auto; /* 컨테이너 자체를 화면 중앙에 배치 */
 }
 
@@ -162,7 +174,7 @@ input {
   font-size: 1rem;
   border: 1px solid #ccc;
   border-radius: 4px;
-  max-width: 600px; /* 검색바 최대 너비 */
+  max-width: 800px; /* 검색바 최대 너비 */
 }
 
 .search-bar-container button {
@@ -177,6 +189,9 @@ input {
   transition: background-color 0.3s;
 }
 
+.search-bar-container button:hover {
+  background-color: gray;
+}
 
 .post-board {
   display: grid;
@@ -276,5 +291,13 @@ button {
 
 button:hover {
   background-color: gray;
+}
+
+.latest-sort {
+  margin-left: 10px;
+}
+
+.search-mode-btn {
+  margin-right: 10px;
 }
 </style>
