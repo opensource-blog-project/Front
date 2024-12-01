@@ -4,38 +4,58 @@
     <p>나만 알기 아까운 전국 각지 맛집들을 공유해보세요!</p>
 
     <div class="login-form">
-      <label for="username">Id</label>
-      <input type="text" id="username" v-model="username" placeholder="Value" />
+      <label for="userId">Id</label>
+      <input type="text" id="userId" v-model="userId" placeholder="아이디를 입력하세요" />
 
       <label for="password">Password</label>
-      <input type="password" id="password" v-model="password" placeholder="Value" />
+      <input type="password" id="password" v-model="password" placeholder="비밀번호를 입력하세요" />
 
       <button @click="login">로그인</button>
 
       <div class="signup-link">
         <p>아직 회원이 아니시라면?</p>
-        <router-link to="/api/v1/user">회원가입</router-link>
+        <router-link to="/signup">회원가입</router-link>
       </div>
     </div>
   </div>
 </template>
 
 <script>
+import axios from 'axios';
+import EventBus from '@/utils/eventBus';
+
+
 export default {
   data() {
     return {
-      username: '',
+      userId: '', // userId로 변수명 수정
       password: '',
     };
   },
   methods: {
-    login() {
-      // 로그인 로직을 여기에 구현
-      if (this.username && this.password) {
-        // 인증 성공 후 메인 화면으로 이동
-        this.$router.push('/posts');
-      } else {
-        alert('아이디와 비밀번호를 입력해주세요.');
+    async login() {
+      try {
+        const response = await axios.post('http://localhost:8080/api/user/token', {
+          userId: this.userId,
+          password: this.password,
+        });
+
+        if (response.data.success) {
+          const token = response.data.data.accessToken;
+          const username = response.data.data.username;
+
+          localStorage.setItem('accessToken', token);
+          localStorage.setItem('currentUser', username); // username 저장
+          EventBus.emit('updateCurrentUser', username); // 이벤트 전송
+          
+          alert('로그인에 성공했습니다!');
+          this.$router.push('/posts');
+        } else {
+          alert('로그인에 실패했습니다.');
+        }
+      } catch (error) {
+        console.error(error);
+        alert('로그인 중 문제가 발생했습니다.');
       }
     },
   },

@@ -3,22 +3,24 @@
     <div class="left-banner">
       <router-link to="/posts" class="back-link">🏠 홈 화면으로 돌아가기</router-link>
       <div class="comments-section">
-        <p class="likes" @click="likePost">▼ 💜 Like {{ post.likes }}</p>
-        <div class="comment" v-for="comment in comments" :key="comment.id">
-          <span class="nickname">@{{ comment.author }}</span>
+        <p class="likes" @click="likePost">
+          ▼ 💜 Like {{ likeCounts[post.postId] || 0 }}
+        </p>
+        <div class="comment" v-for="comment in comments" :key="comment.commentId">
+          <span class="nickname">@{{ comment.commentWriter }}</span>
 
           <!-- 수정 모드일 때와 아닐 때를 구분 -->
-          <div v-if="editMode === comment.id">
+          <div v-if="editMode === comment.commentId">
             <input v-model="editedComment" />
-            <button @click="saveComment(comment.id)">저장</button>
+            <button @click="saveComment(comment.commentId)">저장</button>
             <button @click="cancelEdit">취소</button>
           </div>
-          <p v-else class="comment-text">{{ comment.text }}</p>
+          <p v-else class="comment-text">{{ comment.content }}</p>
 
-          <!-- 댓글 작성자일 경우에만 수정 및 삭제 버튼 표시, 수정 중일 때는 숨김 -->
-          <div v-if="isAuthor(comment) && editMode !== comment.id" class="comment-actions">
-            <button @click="editComment(comment.id)">✏️</button>
-            <button @click="deleteComment(comment.id)">🗑️</button>
+          <!-- 댓글 작성자일 경우에만 수정 및 삭제 버튼 표시 -->
+          <div v-if="isAuthor(comment) && editMode !== comment.commentId" class="comment-actions">
+            <button @click="editComment(comment.commentId)">✏️</button>
+            <button @click="deleteComment(comment.commentId)">🗑️</button>
           </div>
         </div>
 
@@ -34,10 +36,16 @@
         <button @click="navigateToEdit">수정</button>
         <button @click="deletePost">삭제</button>
       </div>
-      <p class="author">@{{ post.author }}</p>
+      <p class="author">@{{ post.postWriter }}</p>
       <h1 class="title">{{ post.title }}</h1>
       <div class="images">
-        <img v-for="(image, index) in post.images" :key="index" :src="image" class="post-image" />
+        <!-- postImages 배열을 반복하여 각 이미지를 출력 -->
+        <img 
+          v-for="(image, index) in post.postImages" 
+          :key="index" 
+          :src="'data:image/png;base64,' + image" 
+          class="post-image" 
+        />
       </div>
       <h3 class="store-name">{{ post.restaurant }}</h3>
       <p class="body">{{ post.content }}</p>
@@ -47,6 +55,7 @@
 
 <script>
 import axios from 'axios';
+import EventBus from '@/utils/eventBus';
 
 export default {
   data() {
@@ -54,147 +63,207 @@ export default {
       post: {},
       comments: [],
       newComment: '',
-      currentUser: 'puppy',
       editMode: null,
       editedComment: '',
-      isLiking: false // 좋아요 처리 상태 확인
+      currentUser: localStorage.getItem('currentUser') || '',
+      isLiking: false,
+      likeCounts: {}, // 좋아요 개수를 관리하는 객체
+      hasLiked: false, // 현재 사용자가 좋아요를 눌렀는지 여부
     };
   },
-  mounted() {
-    const postId = this.$route.params.id; // URL 파라미터에서 ID를 가져옵니다.
-    axios.get(`http://localhost:3000/posts/${postId}`)
-      .then(response => {
-        this.post = response.data;
-      })
-      .catch(error => {
-        console.error('Error fetching data:', error);
-      });
+  created() {
+    EventBus.on('updateCurrentUser', (username) => {
+      this.currentUser = username;
+      localStorage.setItem('currentUser', username);
+    });
+  },
+  beforeUnmount() {
+    EventBus.off('updateCurrentUser');
   },
   computed: {
     isPostAuthor() {
-      return this.post.author === this.currentUser;
+      return this.post.postWriter === this.currentUser;
     },
   },
+  async mounted() {
+    const postId = this.$route.params.id;
+    if (!postId) {
+      console.error('postId가 제대로 전달되지 않았습니다.');
+    }
+    await this.fetchPostData(postId);
+    await this.fetchComments(postId);
+    await this.fetchLikeCount(postId); // 해당 게시글의 좋아요 개수도 가져오기
+    // 좋아요 상태를 클라이언트에서 관리
+    this.hasLiked = localStorage.getItem(`liked_${postId}`) === 'true'; // 클라이언트에서 관리
+  },
   methods: {
-    isAuthor(comment) {
-      return comment.author === this.currentUser;
-    },
-    async addComment() {
-      if (!this.newComment.trim()) {
-        alert("댓글 내용을 입력해주세요.");
-        return;
-      }
-
+    async fetchPostData(postId) {
       try {
-        const formData = new FormData();
-        // formData.append('id', this.localId);
-        formData.append('author', this.currentUser);
-        formData.append('title', this.title);
-        formData.append('content', this.content);
-        formData.append('restaurant', this.restaurant);
-        formData.append('comment/${commentid}/commentWriter', this.currentUser);
-        formData.append('comment/${commentid}/contents', this.newComment);
-        // this.images.forEach((photo, index) => {
-        //   formData.append(`images[${index}]`, photo);
-        // });
-        const url = `http://localhost:3000/posts/1`
-
-        // PUT 요청으로 데이터 전송
-        let response;
-        response = await axios.put(url, formData, {
+        const response = await axios.get(`http://localhost:8080/posts/${postId}`, {
           headers: {
-            'Content-Type': 'application/json',
+            Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
           },
         });
-        console.log('Response data:', response.data);
-
-        // 댓글 목록에 새 댓글 추가
-        this.comments.push({
-          id: response.data.commentId,
-          author: response.data.commentWriter,
-          text: response.data.content,
-        });
-
-        // 입력 필드 초기화
-        this.newComment = "";
-
-        alert("댓글이 성공적으로 작성되었습니다.");
+        this.post = response.data;
       } catch (error) {
-        if (error.response && error.response.status === 401) {
-          alert("인증에 실패했습니다. 다시 로그인해주세요.");
-        } else {
-          console.error("댓글 작성 중 오류 발생:", error);
-          alert("댓글 작성에 실패했습니다. 다시 시도해주세요.");
-        }
+        console.error('Error fetching post data:', error);
       }
-    },    
-    editComment(id) {
-      const comment = this.comments.find((c) => c.id === id);
-      this.editMode = id;
-      this.editedComment = comment.text;
     },
-    saveComment(id) {
-      const comment = this.comments.find((c) => c.id === id);
-      if (this.editedComment.trim()) {
-        comment.text = this.editedComment;
+    async fetchComments(postId) {
+      try {
+        const response = await axios.get(`http://localhost:8080/posts/${postId}/comment/list`, {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
+          },
+        });
+        this.comments = response.data;
+      } catch (error) {
+        console.error('Error fetching comments:', error);
+      }
+    },
+    async fetchLikeCount(postId) {
+      try {
+        const response = await axios.get(`http://localhost:8080/posts/${postId}/like-count`, {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
+          },
+        });
+        this.likeCounts[postId] = response.data || 0; // 응답이 숫자일 경우 바로 할당
+      } catch (error) {
+        console.error(`Error fetching like count for post ${postId}:`, error);
+        this.likeCounts[postId] = 0; // 오류 발생 시 기본값 0으로 설정
+      }
+    },
+    isAuthor(comment) {
+      return comment.commentWriter === this.currentUser;
+    },
+    async addComment() {
+      if (!this.post.postId) {
+        console.error('Post ID is not available!');
+        return;
+      }
+      try {
+        const response = await axios.post(
+          `http://localhost:8080/posts/${this.post.postId}/comment/create`,
+          { content: this.newComment },
+          {
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
+            },
+          }
+        );
+        this.comments.push(response.data);
+        this.newComment = '';
+      } catch (error) {
+        console.error('댓글 작성 오류:', error);
+      }
+    },
+    editComment(id) {
+      const comment = this.comments.find((c) => c.commentId === id);
+      this.editMode = id;
+      this.editedComment = comment.content;
+    },
+    async saveComment(id) {
+      try {
+        const response = await axios.put(
+          `http://localhost:8080/posts/${this.post.postId}/comment/${id}/update`,
+          { content: this.editedComment },
+          {
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
+            },
+          }
+        );
+        const updatedComment = this.comments.find((c) => c.commentId === id);
+        updatedComment.content = response.data.content;
         this.editMode = null;
         this.editedComment = '';
+      } catch (error) {
+        console.error('댓글 수정 오류:', error);
       }
     },
     cancelEdit() {
       this.editMode = null;
       this.editedComment = '';
     },
-    deleteComment(id) {
-      this.comments = this.comments.filter((c) => c.id !== id);
+    async deleteComment(id) {
+      try {
+        await axios.delete(
+          `http://localhost:8080/posts/${this.post.postId}/comment/${id}/delete`,
+          {
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
+            },
+          }
+        );
+        this.comments = this.comments.filter((c) => c.commentId !== id);
+      } catch (error) {
+        console.error('댓글 삭제 오류:', error);
+      }
     },
     navigateToEdit() {
       this.$router.push({
-        name: 'EditPost',
-        params: { id: this.post.id },
+        name: 'NewPost',
+        query: {
+          id: this.post.postId,
+          title: this.post.title,
+          restaurant: this.post.restaurant,
+          content: this.post.content,
+        },
       });
     },
-    deletePost() {
+    async deletePost() {
       if (confirm('정말로 이 글을 삭제하시겠습니까?')) {
-        axios.delete(`http://localhost:3000/posts/${this.post.id}`)
-          .then(() => {
-            console.log('Post deleted');
-            this.$router.push({ name: 'Main' }); // 삭제 후 홈으로 이동
-          })
-          .catch(error => {
-            console.error('Error deleting post:', error);
+        try {
+          await axios.delete(`http://localhost:8080/posts/${this.post.postId}/delete`, {
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
+            },
           });
+          this.$router.push({ name: 'Main' });
+        } catch (error) {
+          console.error('Error deleting post:', error);
+        }
       }
     },
-    likePost() {
-      if (this.isLiking) return; // 이미 요청 중이라면 아무것도 하지 않음
+    async likePost() {
+      if (this.isLiking) return;
       this.isLiking = true;
 
-      axios.post('/api/pushLike', {
-        postId: this.post.id,
-        username: this.currentUser
-      })
-        .then(response => {
-          this.post.likes = response.data.likes;
-        })
-        .catch(error => {
-          console.error('좋아요 처리 실패:', error);
-        })
-        .finally(() => {
-          this.isLiking = false; // 요청 완료 후 상태 초기화
-        });
-    },
-    createPost() {
-      axios.post('http://localhost:3000/posts', this.newPost)
-        .then(response => {
-          console.log('Post created', response.data);
-          this.newPost = { title: '', author: '', images: '', restaurant: '', body: '' };
-        })
-        .catch(error => {
-          console.error('Error creating post:', error);
-        });
+      // 즉시 좋아요 개수 변경
+      const postId = this.post.postId;
+      this.likeCounts[postId] = this.hasLiked ? this.likeCounts[postId] - 1 : this.likeCounts[postId] + 1;
+      this.hasLiked = !this.hasLiked; // 좋아요 상태 토글
+      localStorage.setItem(`liked_${postId}`, this.hasLiked.toString()); // 상태 로컬 저장
+
+      try {
+        // 서버에 좋아요 상태 전송
+        const response = await axios.post(
+          `http://localhost:8080/posts/${postId}/push-like`,
+          {},
+          {
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
+            },
+          }
+        );
+        // 서버에서 받은 응답이 실패하면 상태를 원상태로 복구
+        if (!response.data.success) {
+          this.likeCounts[postId] = this.hasLiked ? this.likeCounts[postId] - 1 : this.likeCounts[postId] + 1;
+          this.hasLiked = !this.hasLiked;
+          localStorage.setItem(`liked_${postId}`, this.hasLiked.toString());
+        }
+      } catch (error) {
+        console.error('좋아요 처리 실패:', error);
+        // 서버 통신 실패 시 상태를 되돌림
+        this.likeCounts[postId] = this.hasLiked ? this.likeCounts[postId] - 1 : this.likeCounts[postId] + 1;
+        this.hasLiked = !this.hasLiked;
+        localStorage.setItem(`liked_${postId}`, this.hasLiked.toString());
+      } finally {
+        this.isLiking = false;
+      }
     }
-  }
+  },
 };
 </script>
 
@@ -304,8 +373,12 @@ export default {
 }
 
 .title {
-  font-size: 24px;
-  margin: 10px 0;
+  font-size: 30px;
+  margin: 20px 0;
+  text-align: center;
+  background-color: #f0f0f0;
+  padding: 20px;
+  display: inline-block;
 }
 
 .images {
@@ -315,17 +388,17 @@ export default {
 }
 
 .post-image {
-  width: 100%;
+  width: 30%;
   border-radius: 5px;
 }
 
 .store-name {
-  font-size: 18px;
-  margin: 5px 0;
+  font-size: 25px;
+  margin: 10px 0;
 }
 
 .body {
-  font-size: 16px;
+  font-size: 20px;
   line-height: 1.5;
 }
 

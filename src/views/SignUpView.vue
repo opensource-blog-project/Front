@@ -4,11 +4,11 @@
     <div class="signup-form">
       <div class="form-header">회원 기본 정보</div>
 
-      <label for="username">아이디:</label>
+      <label for="userId">아이디:</label>
       <input
         type="text"
-        id="username"
-        v-model="username"
+        id="userId"
+        v-model="userId"
         placeholder="4~8자 영문 대소문자와 숫자로만 입력"
       />
 
@@ -28,11 +28,11 @@
         placeholder="비밀번호를 다시 입력"
       />
 
-      <label for="nickname">닉네임:</label>
+      <label for="username">닉네임:</label>
       <input
         type="text"
-        id="nickname"
-        v-model="nickname"
+        id="username"
+        v-model="username"
         placeholder="사용할 닉네임을 입력"
       />
 
@@ -42,31 +42,50 @@
 </template>
 
 <script>
+import axios from 'axios';
+
 export default {
   data() {
     return {
-      username: '',
+      userId: '',
       password: '',
       confirmPassword: '',
-      nickname: '', // 닉네임 추가
+      username: ''
     };
   },
   methods: {
-    signup() {
+    async signup() {
       if (this.password !== this.confirmPassword) {
         alert('비밀번호가 일치하지 않습니다.');
         return;
       }
-      if (this.username && this.password && this.nickname) {
-        // 회원가입 성공 후 로그인 페이지로 이동
-        alert('회원가입이 완료되었습니다!');
-        this.$router.push('/login');
+      if (this.userId && this.password && this.username) {
+        try {
+          const requestBody = {
+            userId: this.userId,
+            password: this.password,
+            confirmPassword: this.confirmPassword,
+            username: this.username,
+            agree: "true"
+          };
+          const response = await axios.post('http://localhost:8080/api/user', requestBody);
+          if (response.data.success) {
+            alert('회원가입이 완료되었습니다!');
+            this.$router.push('/');
+          } else {
+            alert('회원가입에 실패했습니다.');
+          }
+        } catch (error) {
+          console.error('Error:', error);
+          alert('회원가입 중 오류가 발생했습니다.');
+        }
       } else {
         alert('모든 필드를 입력해 주세요.');
       }
     },
   },
 };
+
 </script>
 
 <style scoped>

@@ -76,6 +76,7 @@
   import { useRouter } from "vue-router";
   import storeIcon from "@/assets/storeicon.png";
   import bookmarkIcon from "@/assets/bookmarkicon.png";
+  //import { EventBus } from '@/utils/eventBus';
   
   
   export default {
@@ -182,7 +183,7 @@
   
       // 홈으로 이동
       const goToMainView = () => {
-        router.push("/main"); // 라우터를 사용하여 메인 화면으로 이동
+        router.push("/posts"); // 라우터를 사용하여 메인 화면으로 이동
       };
   
       return {
