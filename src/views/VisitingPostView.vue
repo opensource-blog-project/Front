@@ -116,7 +116,7 @@ export default {
             Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
           },
         });
-        this.comments = response.data.content;
+        this.comments = response.data;
       } catch (error) {
         console.error('Error fetching comments:', error);
       }
