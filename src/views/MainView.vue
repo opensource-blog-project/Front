@@ -69,7 +69,7 @@ export default {
       .get('http://localhost:8080/posts/list', { headers })
       .then((response) => {
         console.log('서버 응답 데이터:', response.data);
-        this.posts = Array.isArray(response.data.content) ? response.data.content : [];
+        this.posts = Array.isArray(response.data) ? response.data : [];
         return this.fetchAllLikeCounts();
       })
       .catch((error) => {
@@ -82,18 +82,25 @@ export default {
       if (!Array.isArray(this.posts)) {
         return [];
       }
+    
+      let filtered = [];
+
+      // 검색 모드에 따라 필터링
       if (this.searchMode === 'tag') {
-        return this.posts.filter((post) =>
+        filtered = this.posts.filter((post) =>
           post.hashTags.some((tag) => tag.name.includes(this.searchQuery))
         );
       } else {
-        return this.posts.filter(
+        filtered = this.posts.filter(
           (post) =>
             post.restaurant.includes(this.searchQuery) ||
             post.title.includes(this.searchQuery)
         );
       }
-    },
+    
+      // postId 기준 내림차순 정렬
+      return filtered.sort((a, b) => b.postId - a.postId);
+    }
   },
   methods: {
     async fetchLikeCount(postId) {

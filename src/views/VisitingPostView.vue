@@ -39,8 +39,13 @@
       <p class="author">@{{ post.postWriter }}</p>
       <h1 class="title">{{ post.title }}</h1>
       <div class="images">
-        <!-- postImage가 Base64 문자열로 처리 -->
-        <img v-if="post.postImage" :src="'data:image/png;base64,' + post.postImage" class="post-image" />
+        <!-- postImages 배열을 반복하여 각 이미지를 출력 -->
+        <img 
+          v-for="(image, index) in post.postImages" 
+          :key="index" 
+          :src="'data:image/png;base64,' + image" 
+          class="post-image" 
+        />
       </div>
       <h3 class="store-name">{{ post.restaurant }}</h3>
       <p class="body">{{ post.content }}</p>
@@ -383,7 +388,7 @@ export default {
 }
 
 .post-image {
-  width: 40%;
+  width: 30%;
   border-radius: 5px;
 }
 
