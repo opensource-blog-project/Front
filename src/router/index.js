@@ -19,7 +19,9 @@ const routes = [
     component: NewPostView,
     props: true, // 수정 모드에서 데이터를 전달
   },
-  { path: "/mypage", name: "MyPage", component : MyPageView }
+  { path: "/mypage", name: "MyPage", component : MyPageView,
+    props: { currentUser: localStorage.getItem('currentUser') },
+  }
 ];
 
 const router = createRouter({
