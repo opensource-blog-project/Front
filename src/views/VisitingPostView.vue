@@ -32,6 +32,8 @@
     </div>
 
     <div class="post-content">
+        <!-- '저장' 버튼 추가 -->
+      <button @click="savePost" class="post-action-button">이 글 저장하기</button>
       <div v-if="isPostAuthor" class="post-actions">
         <button @click="navigateToEdit">수정</button>
         <button @click="deletePost">삭제</button>
@@ -46,6 +48,12 @@
           :src="'data:image/png;base64,' + image" 
           class="post-image" 
         />
+      </div>
+      <!-- 태그들 추가 부분 -->
+      <div class="tags">
+        <span v-for="(tag, index) in post.hashTags" :key="index" class="tag">
+          {{ tag.name }}
+        </span>
       </div>
       <h3 class="store-name">{{ post.restaurant }}</h3>
       <p class="body">{{ post.content }}</p>
@@ -254,20 +262,52 @@ export default {
           localStorage.setItem(`liked_${postId}`, this.hasLiked.toString());
         }
       } catch (error) {
-        console.error('좋아요 처리 실패:', error);
-        // 서버 통신 실패 시 상태를 되돌림
-        this.likeCounts[postId] = this.hasLiked ? this.likeCounts[postId] - 1 : this.likeCounts[postId] + 1;
-        this.hasLiked = !this.hasLiked;
-        localStorage.setItem(`liked_${postId}`, this.hasLiked.toString());
+        console.error('좋아요 처리 오류:', error);
       } finally {
         this.isLiking = false;
       }
-    }
+    },
+
+    async savePost() {
+      if (!this.post.postId) {
+        console.error('Post ID is not available!');
+        return;
+      }
+      try {
+        // API 요청을 통해 게시글 저장
+        await axios.post(
+          `http://localhost:8080/posts/${this.post.postId}/save`,
+          {},
+          {
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
+            },
+          }
+        );
+        alert('게시글이 저장되었습니다!');
+      } catch (error) {
+        console.error('게시글 저장 오류:', error);
+      }
+    },
   },
 };
 </script>
 
 <style scoped>
+.tags {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+.tag {
+  background-color: #f0f0f0;
+  padding: 5px 10px;
+  border-radius: 5px;
+  font-size: 14px;
+  color: #333;
+}
+
 .visiting-post-view {
   display: flex;
   padding: 20px;
@@ -423,4 +463,20 @@ export default {
   border: none;
   cursor: pointer;
 }
+
+.post-action-button {
+  background-color: black;
+  color: white;
+  border: none;
+  padding: 5px 10px;
+  margin-left: 5px;
+  cursor: pointer;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.post-action-button:hover {
+  background-color: #333;
+}
+
 </style>
