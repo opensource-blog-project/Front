@@ -1,0 +1,79 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: multi-container-app
+  labels:
+    app: multi-container
+spec:
+  containers:
+    - name: backend-container
+      image: hyunj24/blog-spring-backend:latest
+      ports:
+        - containerPort: 8080
+      env:
+        - name: DB_HOST
+          value: "localhost" # 동일한 Pod 내부의 MySQL 컨테이너와 통신
+        - name: DB_PORT
+          value: "3306"
+        - name: DB_NAME
+          value: "opensourcedb"
+        - name: DB_USER
+          value: "user"
+        - name: DB_PASSWORD
+          value: "1234"
+
+    - name: frontend-container
+      image: hyunj24/vue-app:latest
+      ports:
+        - containerPort: 8081
+
+    - name: mysql-container
+      image: mysql:8
+      env:
+        - name: MYSQL_ROOT_PASSWORD
+          value: "1234" # 루트 비밀번호
+        - name: MYSQL_DATABASE
+          value: "opensourcedb"  # 기본 데이터베이스 이름
+        - name: MYSQL_USER
+          value: "user"        # 사용자 이름
+        - name: MYSQL_PASSWORD
+          value: "1234"
+      ports:
+        - containerPort: 3306
+      volumeMounts:
+        - name: mysql-data
+          mountPath: /var/lib/mysql
+
+  volumes:
+    - name: mysql-data
+      persistentVolumeClaim:
+        claimName: mysql-pvc
+
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: mysql-pv
+spec:
+  capacity:
+    storage: 1Gi
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain # 데이터를 유지하기 위한 설정
+  hostPath: # 로컬 저장소 경로
+    path: /mnt/data/mysql # 로컬 환경에서 데이터를 저장할 경로
+  claimRef: # PVC와 연결
+    namespace: default      # PVC가 있는 네임스페이스
+    name: mysql-pvc         # PVC 이름
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mysql-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
